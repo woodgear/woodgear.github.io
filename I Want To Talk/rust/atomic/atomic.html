@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+            <html>
+            <head>
+            <meta charset="utf-8"/>
+            <link rel="stylesheet" href="..\..\..\common/default/style.css">
+            <link rel="stylesheet" href="..\..\..\common/highlight/styles/solarized-dark.css">
+            <link rel="stylesheet" type="text/css" href="..\..\..\common/math/katex/katex.min.css">
+            <link rel="stylesheet" type="text/css" href="..\..\..\common/label/label.min.css">
+            <script src="..\..\..\common/script/util.js"></script>
+            <title>atomic</title>
+            </head>
+            <body>
+            <div class="content">
+            <header id="meta">
+        <div id="tag" class="ui labels">
+        <a class="ui label" id="time_ago">Sun Jan 13 2019 05:12:48 GMT+0800 (GMT+08:00)</a>
+        <a class="ui label">I Want To Talk</a>
+<a class="ui label">rust</a>
+        
+        </div>
+    </header>
+            <article>
+            <p><a href="https://doc.rust-lang.org/nomicon/atomics.html">原子类型</a>
+<br>
+我们可以放心的多线程环境中使用原子类型 但是很明显的要赋予其面对多线程访问时如何处理的信息 </p>
+<h2>Sequentially Consistent (SeqCst)</h2>
+<p>all accesses on one thread that happen before and after a SeqCst access stay before and after it
+<br>
+序列固化是的编译器不再重排关于这个类型的操作</p>
+<h2>Acquire and Release</h2>
+<p>an acquire access ensures that every access after it stays after it. However operations that occur before an acquire are free to be reordered to occur after it. Similarly, a release access ensures that every access before it stays before it. However operations that occur after a release are free to be reordered to occur before it.
+<br>
+Acquire 后方固化保证在Acquire之后的操作永远在Acquire之后
+<br>
+Release 前方固化保证在Release之前的操作永远在Release之前</p>
+<pre class="hlcode"><code><span class="hljs-keyword">use</span> std::sync::Arc;
+<span class="hljs-keyword">use</span> std::sync::atomic::{AtomicBool, Ordering};
+<span class="hljs-keyword">use</span> std::thread;
+
+<span class="hljs-function"><span class="hljs-keyword">fn</span> <span class="hljs-title">main</span></span>() {
+    <span class="hljs-keyword">let</span> lock = Arc::new(AtomicBool::new(<span class="hljs-literal">false</span>)); <span class="hljs-comment">// value answers "am I locked?"</span>
+
+    <span class="hljs-comment">// ... distribute lock to threads somehow ...</span>
+
+    <span class="hljs-comment">// Try to acquire the lock by setting it to true</span>
+    <span class="hljs-keyword">while</span> lock.compare_and_swap(<span class="hljs-literal">false</span>, <span class="hljs-literal">true</span>, Ordering::Acquire) { }
+    <span class="hljs-comment">// broke out of the loop, so we successfully acquired the lock!</span>
+
+    <span class="hljs-comment">// ... scary data accesses ...</span>
+
+    <span class="hljs-comment">// ok we're done, release the lock</span>
+    lock.store(<span class="hljs-literal">false</span>, Ordering::Release);
+}<code></pre>
+<h2>Relaxed</h2>
+<p>Relaxed accesses are the absolute weakest. They can be freely re-ordered and provide no happens-before relationship. Still, relaxed operations are still atomic. That is, they don't count as data accesses and any read-modify-write operations done to them occur atomically. Relaxed operations are appropriate for things that you definitely want to happen, but don't particularly otherwise care about. For instance, incrementing a counter can be safely done by multiple threads using a relaxed fetch_add if you're not using the counter to synchronize any other accesses.</p>
+            </article>
+            </div>
+            <body>
+            <script src="..\..\..\common/script/fix.js"></script>
+            </html>

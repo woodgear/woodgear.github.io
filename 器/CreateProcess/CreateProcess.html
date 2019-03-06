@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+            <html>
+            <head>
+            <meta charset="utf-8"/>
+            <link rel="stylesheet" href="..\..\common/default/style.css">
+            <link rel="stylesheet" href="..\..\common/highlight/styles/solarized-dark.css">
+            <link rel="stylesheet" type="text/css" href="..\..\common/math/katex/katex.min.css">
+            <link rel="stylesheet" type="text/css" href="..\..\common/label/label.min.css">
+            <script src="..\..\common/script/util.js"></script>
+            <title>CreateProcess</title>
+            </head>
+            <body>
+            <div class="content">
+            <header id="meta">
+        <div id="tag" class="ui labels">
+        <a class="ui label" id="time_ago">Tue Jan 29 2019 22:47:18 GMT+0800 (GMT+08:00)</a>
+        <a class="ui label">器</a>
+        
+        </div>
+    </header>
+            <article>
+            <p>实现一个函数
+输入 命令行
+输出 此命令行的执行结果</p>
+<h1>c++</h1>
+<pre class="hlcode"><code><span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">"stdafx.h"</span></span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;Windows.h&gt;</span></span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;string&gt;</span></span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;iostream&gt;</span></span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">include</span> <span class="hljs-meta-string">&lt;sstream&gt;</span></span>
+<span class="hljs-meta">#<span class="hljs-meta-keyword">define</span> BUFSIZE 4096</span>
+<span class="hljs-keyword">using</span> <span class="hljs-keyword">namespace</span> <span class="hljs-built_in">std</span>;
+
+<span class="hljs-built_in">std</span>::<span class="hljs-function"><span class="hljs-built_in">string</span> <span class="hljs-title">GetLastErrorAsString</span><span class="hljs-params">()</span>
+</span>{
+    <span class="hljs-comment">//Get the error message, if any.</span>
+    DWORD errorMessageID = ::GetLastError();
+    <span class="hljs-keyword">if</span> (errorMessageID == <span class="hljs-number">0</span>)
+        <span class="hljs-keyword">return</span> <span class="hljs-built_in">std</span>::<span class="hljs-built_in">string</span>(); <span class="hljs-comment">//No error message has been recorded</span>
+
+    LPSTR messageBuffer = <span class="hljs-literal">nullptr</span>;
+    <span class="hljs-keyword">size_t</span> size = FormatMessageA(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        <span class="hljs-literal">NULL</span>, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&amp;messageBuffer, <span class="hljs-number">0</span>, <span class="hljs-literal">NULL</span>);
+
+    <span class="hljs-built_in">std</span>::<span class="hljs-function"><span class="hljs-built_in">string</span> <span class="hljs-title">message</span><span class="hljs-params">(messageBuffer, size)</span></span>;
+
+    <span class="hljs-comment">//Free the buffer.</span>
+    LocalFree(messageBuffer);
+
+    <span class="hljs-keyword">return</span> message;
+}
+<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">eval</span><span class="hljs-params">(<span class="hljs-built_in">string</span> cmd, <span class="hljs-built_in">string</span> &amp;res)</span> </span>{
+    SECURITY_ATTRIBUTES saAttr;
+    saAttr.nLength = <span class="hljs-keyword">sizeof</span>(SECURITY_ATTRIBUTES);
+    saAttr.bInheritHandle = TRUE;
+    saAttr.lpSecurityDescriptor = <span class="hljs-literal">NULL</span>;
+
+    HANDLE read = <span class="hljs-literal">NULL</span>;
+    HANDLE write = <span class="hljs-literal">NULL</span>;
+
+    <span class="hljs-comment">//when process write in 'write' you could read from 'read'</span>
+    <span class="hljs-keyword">if</span> (!CreatePipe(&amp;read, &amp;write, &amp;saAttr, <span class="hljs-number">0</span>)) {
+        res =<span class="hljs-string">"CreatePipe Err"</span> ;
+        <span class="hljs-keyword">return</span> <span class="hljs-number">-1</span>;
+    }
+
+    <span class="hljs-comment">//init PROCESS_INFORMATION</span>
+    PROCESS_INFORMATION piProcInfo;
+    ZeroMemory(&amp;piProcInfo, <span class="hljs-keyword">sizeof</span>(PROCESS_INFORMATION));
+    <span class="hljs-comment">//init STARTUPINFO set output handle of process</span>
+    STARTUPINFOA siStartInfo;
+    ZeroMemory(&amp;siStartInfo, <span class="hljs-keyword">sizeof</span>(STARTUPINFO));
+    siStartInfo.cb = <span class="hljs-keyword">sizeof</span>(STARTUPINFO);
+    siStartInfo.hStdOutput = write;
+    siStartInfo.dwFlags |= STARTF_USESTDHANDLES;
+
+    BOOL bSuccess = FALSE;
+    bSuccess = CreateProcessA(
+        <span class="hljs-literal">NULL</span>,
+        (LPSTR)cmd.c_str(),     <span class="hljs-comment">// command line</span>
+        <span class="hljs-literal">NULL</span>,          <span class="hljs-comment">// process security attributes</span>
+        <span class="hljs-literal">NULL</span>,          <span class="hljs-comment">// primary thread security attributes</span>
+        TRUE,          <span class="hljs-comment">// handles are inherited</span>
+        CREATE_NO_WINDOW,<span class="hljs-comment">// creation flags</span>
+        <span class="hljs-literal">NULL</span>,          <span class="hljs-comment">// use parent's environment</span>
+        <span class="hljs-literal">NULL</span>,          <span class="hljs-comment">// use parent's current directory</span>
+        &amp;siStartInfo,  <span class="hljs-comment">// STARTUPINFO pointer</span>
+        &amp;piProcInfo);  <span class="hljs-comment">// receives PROCESS_INFORMATION</span>
+    <span class="hljs-keyword">if</span> (!bSuccess)
+    {
+        res= GetLastErrorAsString();
+        <span class="hljs-keyword">return</span> <span class="hljs-number">-1</span>;
+    }
+
+    CloseHandle(write);
+    CloseHandle(piProcInfo.hProcess);
+    CloseHandle(piProcInfo.hThread);
+
+    <span class="hljs-comment">//now we can read the output of process</span>
+    DWORD dwRead;
+    <span class="hljs-keyword">char</span> chBuf[BUFSIZE + <span class="hljs-number">1</span>];
+    <span class="hljs-built_in">stringstream</span> ss;
+    <span class="hljs-keyword">for</span> (;;)
+    {
+        <span class="hljs-keyword">if</span> (!ReadFile(read, chBuf, BUFSIZE, &amp;dwRead, <span class="hljs-literal">NULL</span>))
+        {
+            <span class="hljs-keyword">break</span>;
+        }
+        <span class="hljs-keyword">if</span> (dwRead &gt; <span class="hljs-number">0</span>)
+        {
+            chBuf[dwRead] = <span class="hljs-string">'\0'</span>;
+            ss &lt;&lt; chBuf;
+        }
+    }
+    res = ss.str();
+    <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;
+}
+
+<span class="hljs-function"><span class="hljs-keyword">int</span> <span class="hljs-title">main</span><span class="hljs-params">()</span>
+</span>{
+    <span class="hljs-built_in">string</span> cmd = <span class="hljs-string">"cmd /C echo test"</span>;
+    <span class="hljs-built_in">string</span> res;
+    <span class="hljs-keyword">if</span> (eval(cmd, res)==<span class="hljs-number">0</span>) {
+        <span class="hljs-built_in">cout</span> &lt;&lt; <span class="hljs-string">"eval "</span> &lt;&lt; cmd &lt;&lt; <span class="hljs-string">" ok"</span> &lt;&lt; <span class="hljs-built_in">endl</span>;
+        <span class="hljs-built_in">cout</span> &lt;&lt; res &lt;&lt; <span class="hljs-built_in">endl</span>;
+    }
+    <span class="hljs-keyword">else</span>
+    {
+        <span class="hljs-built_in">cout</span> &lt;&lt; <span class="hljs-string">"eval "</span> &lt;&lt; cmd &lt;&lt; <span class="hljs-string">" fail"</span> &lt;&lt; <span class="hljs-built_in">endl</span>;
+        <span class="hljs-built_in">cout</span> &lt;&lt; res &lt;&lt; <span class="hljs-built_in">endl</span>;
+    }
+    <span class="hljs-built_in">cin</span>.get();
+    <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;
+}<code></pre>
+<h1>Rust</h1>
+<pre class="hlcode"><code><span class="hljs-comment">// power by https://github.com/hniksic/rust-subprocess.git</span>
+<span class="hljs-comment">/*
+[target.'cfg(windows)'.dependencies]
+winapi = "0.2"
+kernel32-sys = "0.2"
+*/</span>
+
+<span class="hljs-meta">#[cfg(windows)]</span>
+<span class="hljs-keyword">extern</span> <span class="hljs-keyword">crate</span> kernel32;
+<span class="hljs-meta">#[cfg(windows)]</span>
+<span class="hljs-keyword">extern</span> <span class="hljs-keyword">crate</span> winapi;
+<span class="hljs-keyword">use</span> std::ffi::OsStr;
+<span class="hljs-keyword">use</span> std::os::windows::ffi::OsStrExt;
+<span class="hljs-keyword">use</span> std::iter;
+<span class="hljs-keyword">use</span> std::ptr;
+<span class="hljs-keyword">use</span> std::mem;
+
+<span class="hljs-comment">// OsStr to zero-terminated owned vector</span>
+<span class="hljs-function"><span class="hljs-keyword">fn</span> <span class="hljs-title">to_nullterm</span></span>(s: &amp;OsStr) -&gt; <span class="hljs-built_in">Vec</span>&lt;<span class="hljs-built_in">u16</span>&gt; {
+    s.encode_wide().chain(iter::<span class="hljs-keyword">once</span>(<span class="hljs-number">0u16</span>)).collect()
+}
+
+<span class="hljs-function"><span class="hljs-keyword">fn</span> <span class="hljs-title">create_process</span></span>(cmd: <span class="hljs-built_in">String</span>) -&gt; <span class="hljs-built_in">Result</span>&lt;<span class="hljs-built_in">String</span>, <span class="hljs-built_in">String</span>&gt; {
+    <span class="hljs-keyword">use</span> winapi::minwinbase::{LPSECURITY_ATTRIBUTES, SECURITY_ATTRIBUTES};
+    <span class="hljs-keyword">use</span> winapi::winbase::{CREATE_NO_WINDOW, STARTF_USESTDHANDLES};
+    <span class="hljs-keyword">use</span> winapi::minwindef::{BOOL, DWORD};
+    <span class="hljs-keyword">use</span> winapi::{PROCESS_INFORMATION, STARTUPINFOW};
+    <span class="hljs-keyword">use</span> winapi::winnt::PHANDLE;
+    <span class="hljs-keyword">use</span> std::fs::File;
+    <span class="hljs-keyword">use</span> std::os::windows::io::{AsRawHandle, FromRawHandle};
+    <span class="hljs-keyword">use</span> std::ffi::OsStr;
+    <span class="hljs-keyword">use</span> std::io::Read;
+    <span class="hljs-keyword">let</span> <span class="hljs-keyword">mut</span> attributes = SECURITY_ATTRIBUTES {
+        nLength: mem::size_of::&lt;SECURITY_ATTRIBUTES&gt;() <span class="hljs-keyword">as</span> DWORD,
+        lpSecurityDescriptor: ptr::null_mut(),
+        bInheritHandle: <span class="hljs-literal">true</span> <span class="hljs-keyword">as</span> BOOL,
+    };
+
+    <span class="hljs-keyword">let</span> (<span class="hljs-keyword">mut</span> r, <span class="hljs-keyword">mut</span> w) = (ptr::null_mut(), ptr::null_mut());
+    <span class="hljs-keyword">unsafe</span> {
+        kernel32::CreatePipe(
+            &amp;<span class="hljs-keyword">mut</span> r <span class="hljs-keyword">as</span> PHANDLE,
+            &amp;<span class="hljs-keyword">mut</span> w <span class="hljs-keyword">as</span> PHANDLE,
+            &amp;<span class="hljs-keyword">mut</span> attributes <span class="hljs-keyword">as</span> LPSECURITY_ATTRIBUTES,
+            <span class="hljs-number">0</span>,
+        )
+    };
+    <span class="hljs-keyword">let</span> (<span class="hljs-keyword">mut</span> read, write) = <span class="hljs-keyword">unsafe</span> { (File::from_raw_handle(r), File::from_raw_handle(w)) };
+
+    <span class="hljs-keyword">let</span> <span class="hljs-keyword">mut</span> sinfo: STARTUPINFOW = <span class="hljs-keyword">unsafe</span> { mem::zeroed() };
+    sinfo.cb = mem::size_of::&lt;STARTUPINFOW&gt;() <span class="hljs-keyword">as</span> DWORD;
+    sinfo.hStdOutput = write.as_raw_handle();
+    sinfo.dwFlags = STARTF_USESTDHANDLES;
+
+    <span class="hljs-keyword">let</span> cmd_line = OsStr::new(&amp;cmd);
+    <span class="hljs-keyword">let</span> <span class="hljs-keyword">mut</span> pinfo: PROCESS_INFORMATION = <span class="hljs-keyword">unsafe</span> { mem::zeroed() };
+    <span class="hljs-keyword">unsafe</span> {
+        kernel32::CreateProcessW(
+            ptr::null(),
+            to_nullterm(cmd_line).as_mut_ptr(),
+            ptr::null_mut(),  <span class="hljs-comment">// lpProcessAttributes</span>
+            ptr::null_mut(),  <span class="hljs-comment">// lpThreadAttributes</span>
+            <span class="hljs-literal">true</span> <span class="hljs-keyword">as</span> BOOL,     <span class="hljs-comment">// bInheritHandles</span>
+            CREATE_NO_WINDOW, <span class="hljs-comment">// dwCreationFlags</span>
+            ptr::null_mut(),  <span class="hljs-comment">// lpEnvironment</span>
+            ptr::null_mut(),  <span class="hljs-comment">// lpCurrentDirectory</span>
+            &amp;<span class="hljs-keyword">mut</span> sinfo,
+            &amp;<span class="hljs-keyword">mut</span> pinfo,
+        )
+    };
+    <span class="hljs-keyword">unsafe</span> {
+        kernel32::CloseHandle(write.as_raw_handle());
+    }
+    <span class="hljs-keyword">unsafe</span> {
+        kernel32::CloseHandle(pinfo.hProcess);
+    }
+    <span class="hljs-keyword">unsafe</span> {
+        kernel32::CloseHandle(pinfo.hThread);
+    }
+
+    <span class="hljs-keyword">let</span> <span class="hljs-keyword">mut</span> contents = <span class="hljs-built_in">Vec</span>::new();
+    read.read_to_end(&amp;<span class="hljs-keyword">mut</span> contents).map_err(|e|e.to_string())?;
+    <span class="hljs-built_in">String</span>::from_utf8(contents).map_err(|e| e.to_string())
+}
+
+<span class="hljs-meta">#[cfg(test)]</span>
+<span class="hljs-keyword">mod</span> tests {
+    <span class="hljs-keyword">use</span> super::*;
+    <span class="hljs-meta">#[test]</span>
+    <span class="hljs-function"><span class="hljs-keyword">fn</span> <span class="hljs-title">test_create_process</span></span>() {
+        <span class="hljs-keyword">let</span> msg = <span class="hljs-string">"test"</span>.to_owned();
+        <span class="hljs-keyword">let</span> res = create_process(<span class="hljs-built_in">format!</span>(<span class="hljs-string">"cmd /c echo {}"</span>, msg));
+        <span class="hljs-built_in">assert_eq!</span>(res, <span class="hljs-literal">Ok</span>(<span class="hljs-built_in">format!</span>(<span class="hljs-string">"{}\r\n"</span>, msg)));
+    }
+}<code></pre>
+            </article>
+            </div>
+            <body>
+            <script src="..\..\common/script/fix.js"></script>
+            </html>

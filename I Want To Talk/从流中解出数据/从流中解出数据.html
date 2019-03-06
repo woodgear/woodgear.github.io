@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+            <html>
+            <head>
+            <meta charset="utf-8"/>
+            <link rel="stylesheet" href="..\..\common/default/style.css">
+            <link rel="stylesheet" href="..\..\common/highlight/styles/solarized-dark.css">
+            <link rel="stylesheet" type="text/css" href="..\..\common/math/katex/katex.min.css">
+            <link rel="stylesheet" type="text/css" href="..\..\common/label/label.min.css">
+            <script src="..\..\common/script/util.js"></script>
+            <title>从流中解出数据</title>
+            </head>
+            <body>
+            <div class="content">
+            <header id="meta">
+        <div id="tag" class="ui labels">
+        <a class="ui label" id="time_ago">Tue Jan 29 2019 22:44:35 GMT+0800 (GMT+08:00)</a>
+        <a class="ui label">I Want To Talk</a>
+        <a class="ui label">question</a>
+        </div>
+    </header>
+            <article>
+            <h2>问</h2>
+<p>现使用SAX解析xml生成了一系列的event(流)如何从这些event中解出dom(数据)?</p>
+<p>xml如下</p>
+<pre class="hlcode"><code><span class="hljs-tag">&lt;<span class="hljs-name">root</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">pluginA</span>&gt;</span><span class="hljs-tag">&lt;<span class="hljs-name">Policy</span>&gt;</span>testA<span class="hljs-tag">&lt;/<span class="hljs-name">Policy</span>&gt;</span><span class="hljs-tag">&lt;/<span class="hljs-name">pluginA</span>&gt;</span>
+<span class="hljs-tag">&lt;<span class="hljs-name">pluginB</span>&gt;</span>testB<span class="hljs-tag">&lt;/<span class="hljs-name">pluginB</span>&gt;</span>
+<span class="hljs-tag">&lt;/<span class="hljs-name">root</span>&gt;</span><code></pre>
+<p>生成的event如下</p>
+<pre class="hlcode"><code><span class="hljs-keyword">const</span> events = [
+    <span class="hljs-keyword">new</span> Start(<span class="hljs-string">'root'</span>),
+    <span class="hljs-keyword">new</span> Start(<span class="hljs-string">'pluginA'</span>),
+    <span class="hljs-keyword">new</span> Start(<span class="hljs-string">'Policy'</span>),
+    <span class="hljs-keyword">new</span> Text(<span class="hljs-string">'testA'</span>),
+    <span class="hljs-keyword">new</span> End(<span class="hljs-string">'pluginA'</span>),
+    <span class="hljs-keyword">new</span> Start(<span class="hljs-string">'pluginB'</span>),
+    <span class="hljs-keyword">new</span> Text(<span class="hljs-string">'testB'</span>),
+    <span class="hljs-keyword">new</span> End(<span class="hljs-string">'pluginB'</span>),
+    <span class="hljs-keyword">new</span> End(<span class="hljs-string">'root'</span>),
+]<code></pre>
+<h2>答</h2>
+<p>这应当是个栈的结构 每次遇到Start创建一个对象 把此对象引用放到栈顶对象的child中 此对象入栈 End出栈 栈中的最后一个元素即为想要的结构</p>
+<h2>代码</h2>
+<pre class="hlcode"><code><span class="hljs-keyword">const</span> expect = <span class="hljs-built_in">require</span>(<span class="hljs-string">'chai'</span>).expect;
+<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Start</span> </span>{
+    <span class="hljs-keyword">constructor</span>(tag, attribute) {
+        <span class="hljs-keyword">this</span>.tag = tag;
+        <span class="hljs-keyword">this</span>.attribute = attribute || {};
+    }
+}
+<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">End</span> </span>{
+    <span class="hljs-keyword">constructor</span>(tag) {
+        <span class="hljs-keyword">this</span>.tag = tag;
+    }
+}
+<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Text</span> </span>{
+    <span class="hljs-keyword">constructor</span>(text) {
+        <span class="hljs-keyword">this</span>.text = text;
+    }
+}
+
+<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Element</span> </span>{
+    <span class="hljs-keyword">constructor</span>(tagName, attribute, child) {
+        <span class="hljs-keyword">this</span>.tagName = tagName;
+        <span class="hljs-keyword">this</span>.attribute = attribute || {};
+        <span class="hljs-keyword">this</span>.child = child || [];
+    }
+}
+
+<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Handle</span> </span>{
+    <span class="hljs-keyword">constructor</span>() {
+        <span class="hljs-keyword">this</span>.stack = [];
+    }
+
+    create(tag, attribute) {
+        <span class="hljs-keyword">const</span> ele = <span class="hljs-keyword">new</span> Element(tag, attribute);
+        <span class="hljs-comment">//first element</span>
+        <span class="hljs-keyword">if</span> (<span class="hljs-keyword">this</span>.stack.length == <span class="hljs-number">0</span>) {
+            <span class="hljs-keyword">this</span>.stack.push(ele);
+        } <span class="hljs-keyword">else</span> {
+            <span class="hljs-keyword">this</span>.stack[<span class="hljs-keyword">this</span>.stack.length - <span class="hljs-number">1</span>].child.push(ele);
+        }
+        <span class="hljs-keyword">this</span>.stack.push(ele);
+    }
+
+    text(text) {
+        <span class="hljs-keyword">this</span>.stack[<span class="hljs-keyword">this</span>.stack.length - <span class="hljs-number">1</span>].child.push(text);
+    }
+
+    end(tag) {
+        <span class="hljs-keyword">this</span>.stack.pop();
+    }
+    build() {
+        <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.stack[<span class="hljs-number">0</span>];
+    }
+}
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">trans</span>(<span class="hljs-params">events</span>) </span>{
+    <span class="hljs-keyword">const</span> ele = <span class="hljs-keyword">new</span> Handle();
+    <span class="hljs-keyword">for</span> (<span class="hljs-keyword">let</span> event <span class="hljs-keyword">of</span> events) {
+        <span class="hljs-keyword">if</span> (event <span class="hljs-keyword">instanceof</span> Start) {
+            ele.create(event.tag, event.attribute);
+        } <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (event <span class="hljs-keyword">instanceof</span> Text) {
+            ele.text(event.text);
+        }
+        <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (event <span class="hljs-keyword">instanceof</span> End) {
+            ele.end(event.tag);
+        }
+    }
+    <span class="hljs-keyword">return</span> ele.build();
+}
+
+describe(<span class="hljs-string">'Trans'</span>, () =&gt; {
+    <span class="hljs-keyword">const</span> MockEvents = [
+        <span class="hljs-keyword">new</span> Start(<span class="hljs-string">'root'</span>),
+        <span class="hljs-keyword">new</span> Start(<span class="hljs-string">'pluginA'</span>),
+        <span class="hljs-keyword">new</span> Start(<span class="hljs-string">'Policy'</span>),
+        <span class="hljs-keyword">new</span> Text(<span class="hljs-string">'testA'</span>),
+        <span class="hljs-keyword">new</span> End(<span class="hljs-string">'Policy'</span>),
+        <span class="hljs-keyword">new</span> End(<span class="hljs-string">'pluginA'</span>),
+        <span class="hljs-keyword">new</span> Start(<span class="hljs-string">'pluginB'</span>),
+        <span class="hljs-keyword">new</span> Text(<span class="hljs-string">'testB'</span>),
+        <span class="hljs-keyword">new</span> End(<span class="hljs-string">'pluginB'</span>),
+        <span class="hljs-keyword">new</span> End(<span class="hljs-string">'root'</span>),
+    ];
+    it(<span class="hljs-string">'should ok'</span>, () =&gt; {
+        <span class="hljs-keyword">let</span> expectRes = <span class="hljs-keyword">new</span> Element(<span class="hljs-string">'root'</span>, {},
+            [<span class="hljs-keyword">new</span> Element(<span class="hljs-string">'pluginA'</span>, {},
+                [<span class="hljs-keyword">new</span> Element(<span class="hljs-string">'Policy'</span>, {}, [<span class="hljs-string">'testA'</span>])]),
+            <span class="hljs-keyword">new</span> Element(<span class="hljs-string">'pluginB'</span>, {}, [<span class="hljs-string">'testB'</span>]),
+            ],
+        )
+        <span class="hljs-keyword">let</span> res = trans(MockEvents);
+        expect(res).deep.eq(expectRes);
+    })
+});<code></pre>
+<h2>Tips</h2>
+<p>如果想要将element再转换成具体的对象也就很简单了</p>
+            </article>
+            </div>
+            <body>
+            <script src="..\..\common/script/fix.js"></script>
+            </html>

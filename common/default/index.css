@@ -1,0 +1,10 @@
+/*for homepage*/
+#content {
+    display: flex;
+    flex-direction:row;
+    justify-content: center;
+}
+ul{
+    padding-left: 0px;
+     list-style-type:none;
+}

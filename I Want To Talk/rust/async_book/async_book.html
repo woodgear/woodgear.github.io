@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+            <html>
+            <head>
+            <meta charset="utf-8"/>
+            <link rel="stylesheet" href="..\..\..\common/default/style.css">
+            <link rel="stylesheet" href="..\..\..\common/highlight/styles/solarized-dark.css">
+            <link rel="stylesheet" type="text/css" href="..\..\..\common/math/katex/katex.min.css">
+            <link rel="stylesheet" type="text/css" href="..\..\..\common/label/label.min.css">
+            <script src="..\..\..\common/script/util.js"></script>
+            <title>async_book</title>
+            </head>
+            <body>
+            <div class="content">
+            <header id="meta">
+        <div id="tag" class="ui labels">
+        <a class="ui label" id="time_ago">Sun Jan 27 2019 19:54:10 GMT+0800 (GMT+08:00)</a>
+        <a class="ui label">I Want To Talk</a>
+<a class="ui label">rust</a>
+        
+        </div>
+    </header>
+            <article>
+            <p>所以实际上讲重新poll一次future实际上是重新clone一个task丢到task的调用队列中再调用一次?
+所以讲实际上根本不存在调用 所有的future poll完一遍又会被重新丢到队列中直到下次被poll?那这样的话不就相当于死循环吗?
+不是的 例如例子上的TimeFuture实际上是TimeFuture自己调用的wake</p>
+<pre class="hlcode"><code><span class="hljs-keyword">impl</span> TimerFuture {
+    <span class="hljs-comment">/// Create a new `TimerFuture` which will complete after the provided</span>
+    <span class="hljs-comment">/// timeout.</span>
+    <span class="hljs-keyword">pub</span> <span class="hljs-function"><span class="hljs-keyword">fn</span> <span class="hljs-title">new</span></span>(duration: Duration) -&gt; <span class="hljs-keyword">Self</span> {
+        <span class="hljs-keyword">let</span> shared_state = Arc::new(Mutex::new(SharedState {
+            completed: <span class="hljs-literal">false</span>,
+            waker: <span class="hljs-literal">None</span>,
+        }));
+
+        dbg!(<span class="hljs-string">"TimerFuture new"</span>);
+        <span class="hljs-comment">// Spawn the new thread</span>
+        <span class="hljs-keyword">let</span> thread_shared_state = shared_state.clone();
+        thread::spawn(<span class="hljs-keyword">move</span> || {
+            dbg!(<span class="hljs-string">"TimerFuture start thread"</span>);
+            thread::sleep(duration);
+            dbg!(<span class="hljs-string">"TimerFuture time consumed"</span>);
+
+            <span class="hljs-keyword">let</span> <span class="hljs-keyword">mut</span> shared_state = thread_shared_state.lock().unwrap();
+            <span class="hljs-comment">// Signal that the timer has completed and wake up the last</span>
+            <span class="hljs-comment">// task on which the future was polled, if one exists.</span>
+            shared_state.completed = <span class="hljs-literal">true</span>;
+            <span class="hljs-keyword">if</span> <span class="hljs-keyword">let</span> <span class="hljs-literal">Some</span>(waker) = &amp;shared_state.waker {
+                dbg!(<span class="hljs-string">"TimeFuture state completed wakeup task"</span>);
+                waker.wake();
+            }
+        });
+
+        TimerFuture { shared_state }
+    }
+}
+<span class="hljs-keyword">impl</span> Wake <span class="hljs-keyword">for</span> Task {
+    <span class="hljs-function"><span class="hljs-keyword">fn</span> <span class="hljs-title">wake</span></span>(arc_self: &amp;Arc&lt;<span class="hljs-keyword">Self</span>&gt;) {
+        <span class="hljs-comment">// Implement `wake` by sending this task back onto the task channel</span>
+        <span class="hljs-comment">// so that it will be polled again by the executor.</span>
+        <span class="hljs-keyword">let</span> cloned = arc_self.clone();
+        arc_self.task_sender.send(cloned).expect(<span class="hljs-string">"too many tasks queued"</span>);
+    }
+}
+
+<span class="hljs-keyword">impl</span> Executor {
+    <span class="hljs-function"><span class="hljs-keyword">fn</span> <span class="hljs-title">run</span></span>(&amp;<span class="hljs-keyword">self</span>) {
+        dbg!(<span class="hljs-string">"execute start to run"</span>);
+        <span class="hljs-keyword">while</span> <span class="hljs-keyword">let</span> <span class="hljs-literal">Ok</span>(task) = <span class="hljs-keyword">self</span>.ready_queue.recv() {
+            dbg!(<span class="hljs-string">"get a task"</span>);
+
+            <span class="hljs-keyword">let</span> <span class="hljs-keyword">mut</span> future_slot = task.future.lock().unwrap();
+            <span class="hljs-comment">// Take the future, and if it has not yet completed (is still Some),</span>
+            <span class="hljs-comment">// poll it in an attempt to complete it.</span>
+            <span class="hljs-keyword">if</span> <span class="hljs-keyword">let</span> <span class="hljs-literal">Some</span>(<span class="hljs-keyword">mut</span> future) = future_slot.take() {
+                <span class="hljs-comment">// Create a `LocalWaker` from the task itself</span>
+                <span class="hljs-keyword">let</span> lw = local_waker_from_nonlocal(task.clone());
+                <span class="hljs-keyword">if</span> <span class="hljs-keyword">let</span> Poll::Pending = Pin::new(&amp;<span class="hljs-keyword">mut</span> future).poll(&amp;lw) {
+                    dbg!(<span class="hljs-string">"excuttor try to poll and task is pending restore the task"</span>);
+
+                    <span class="hljs-comment">// We're not done processing the future, so put it</span>
+                    <span class="hljs-comment">// back in its task to be run again in the future.</span>
+                    *future_slot = <span class="hljs-literal">Some</span>(future);
+                }
+            }
+        }
+    }
+}<code></pre>
+            </article>
+            </div>
+            <body>
+            <script src="..\..\..\common/script/fix.js"></script>
+            </html>

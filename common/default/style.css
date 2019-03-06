@@ -1,0 +1,95 @@
+@media all and (min-width: 1024px) {
+    .content {
+        margin-bottom: 20px;
+        margin-top: 20px;
+        font-size: 15px;
+        max-width: 80%;
+    }
+}
+
+@media all and (max-width: 1024px) {
+    .content {
+        margin-bottom: 20px;
+        margin-top: 20px;
+        font-size: 15px;
+        max-width: 96%;
+    }
+}
+
+
+/*font-family power by https://zhuanlan.zhihu.com/cuizheng/19861892*/
+
+.content {
+    font-family: "Lucida Grande", Lucida Sans Unicode, Hiragino Sans GB, WenQuanYi Micro Hei, Verdana, Aril, sans-serif;
+}
+
+
+/*for quote*/
+
+blockquote {
+    background: #f9f9f9;
+    border-left: 10px solid #ccc;
+    margin: 1.5em 10px;
+    padding: 0.5em 10px;
+    quotes: "\201C""\201D""\2018""\2019";
+    margin-left: 0px;
+}
+
+blockquote:before {
+    color: #ccc;
+    content: open-quote;
+    font-size: 4em;
+    line-height: 0.1em;
+    margin-right: 0.25em;
+    vertical-align: -0.4em;
+}
+
+blockquote p {
+    display: inline;
+}
+
+html {
+    padding: 0px;
+    margin: 0px;
+}
+
+body {
+    margin: 0px;
+    padding: 0px;
+    display: flex;
+    justify-content: center;
+}
+
+a {
+    color: #08c;
+    text-decoration: none;
+}
+
+ul p {
+    margin: 0px;
+}
+
+ul,
+li {
+    margin: 0px;
+}
+
+
+/*power by http://mediatemple.net/blog/tips/considerations-for-styling-the-pre-tag*/
+
+pre.hlcode {
+    position: relative;
+    padding: 10px 10px;
+    background: #f7f7f7;
+    word-break: break-all;
+    word-wrap: break-word;
+    white-space: pre;
+    color: #666666;
+    overflow: auto;
+    line-height: 1.5;
+    font-family: source-code-pro, serif;
+}
+
+header {
+    border-bottom: 1px solid #e4e6e8;
+}

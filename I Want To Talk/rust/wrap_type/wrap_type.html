@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+            <html>
+            <head>
+            <meta charset="utf-8"/>
+            <link rel="stylesheet" href="..\..\..\common/default/style.css">
+            <link rel="stylesheet" href="..\..\..\common/highlight/styles/solarized-dark.css">
+            <link rel="stylesheet" type="text/css" href="..\..\..\common/math/katex/katex.min.css">
+            <link rel="stylesheet" type="text/css" href="..\..\..\common/label/label.min.css">
+            <script src="..\..\..\common/script/util.js"></script>
+            <title>wrap_type</title>
+            </head>
+            <body>
+            <div class="content">
+            <header id="meta">
+        <div id="tag" class="ui labels">
+        <a class="ui label" id="time_ago">Tue Jan 29 2019 22:46:10 GMT+0800 (GMT+08:00)</a>
+        <a class="ui label">I Want To Talk</a>
+<a class="ui label">rust</a>
+        
+        </div>
+    </header>
+            <article>
+            <h1>Cell</h1>
+<h2>Cell是什么东西</h2>
+<pre class="hlcode"><code><span class="hljs-meta">#[repr(transparent)]</span>
+<span class="hljs-keyword">pub</span> <span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">Cell</span></span>&lt;T: ?<span class="hljs-built_in">Sized</span>&gt; {
+    value: UnsafeCell&lt;T&gt;,
+}
+<span class="hljs-keyword">impl</span>&lt;T&gt; Cell&lt;T&gt; {
+    <span class="hljs-keyword">pub</span> <span class="hljs-keyword">const</span> <span class="hljs-function"><span class="hljs-keyword">fn</span> <span class="hljs-title">new</span></span>(value: T) -&gt; Cell&lt;T&gt; {
+        Cell {
+            value: UnsafeCell::new(value),
+        }
+    }
+    <span class="hljs-keyword">pub</span> <span class="hljs-function"><span class="hljs-keyword">fn</span> <span class="hljs-title">set</span></span>(&amp;<span class="hljs-keyword">self</span>, val: T) {
+        <span class="hljs-keyword">let</span> old = <span class="hljs-keyword">self</span>.replace(val);
+        <span class="hljs-built_in">drop</span>(old);
+    }
+}<code></pre>
+<p>Cell的set方法只要求拥有不可变的reference 这就是她最大的作用</p>
+<h2>有什么用 或者说在实际的例子中人们是怎么使用Cell的</h2>
+<h3>假设我们希望不用mut ref 一个struct 来mut一个struct (hahahah)</h3>
+<pre class="hlcode"><code><span class="hljs-keyword">use</span> std::cell::Cell;
+
+<span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">SomeStruct</span></span> {
+    regular_field: <span class="hljs-built_in">u8</span>,
+    special_field: Cell&lt;<span class="hljs-built_in">u8</span>&gt;,
+}
+
+<span class="hljs-keyword">let</span> my_struct = SomeStruct {
+    regular_field: <span class="hljs-number">0</span>,
+    special_field: Cell::new(<span class="hljs-number">1</span>),
+};
+
+<span class="hljs-keyword">let</span> new_value = <span class="hljs-number">100</span>;
+
+<span class="hljs-comment">// ERROR, because my_struct is immutable</span>
+<span class="hljs-comment">// my_struct.regular_field = new_value;</span>
+
+<span class="hljs-comment">// WORKS, although `my_struct` is immutable, field `special_field` is mutable because it is Cell</span>
+my_struct.special_field.set(new_value);
+<span class="hljs-built_in">assert_eq!</span>(my_struct.special_field.get(), new_value);<code></pre>
+<h3>希望做一些兼容性的操作</h3>
+<p>or because you must employ mutation to implement a trait method that was originally defined to take &self.</p>
+<h3>偷偷的进行mut 理论上不用mut的地方在实现上需要mut</h3>
+<ul><li><p>例如实现memorize 每次只是get(&self) 但实际上要修改缓存(&mut self)</p></li>
+</ul>
+<pre class="hlcode"><code><span class="hljs-keyword">use</span> std::cell::RefCell;
+
+<span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">Graph</span></span> {
+    edges: <span class="hljs-built_in">Vec</span>&lt;(<span class="hljs-built_in">i32</span>, <span class="hljs-built_in">i32</span>)&gt;,
+    span_tree_cache: RefCell&lt;<span class="hljs-built_in">Option</span>&lt;<span class="hljs-built_in">Vec</span>&lt;(<span class="hljs-built_in">i32</span>, <span class="hljs-built_in">i32</span>)&gt;&gt;&gt;
+}
+
+<span class="hljs-keyword">impl</span> Graph {
+    <span class="hljs-function"><span class="hljs-keyword">fn</span> <span class="hljs-title">minimum_spanning_tree</span></span>(&amp;<span class="hljs-keyword">self</span>) -&gt; <span class="hljs-built_in">Vec</span>&lt;(<span class="hljs-built_in">i32</span>, <span class="hljs-built_in">i32</span>)&gt; {
+        <span class="hljs-comment">// Create a new scope to contain the lifetime of the</span>
+        <span class="hljs-comment">// dynamic borrow</span>
+        {
+            <span class="hljs-comment">// Take a reference to the inside of cache cell</span>
+            <span class="hljs-keyword">let</span> <span class="hljs-keyword">mut</span> cache = <span class="hljs-keyword">self</span>.span_tree_cache.borrow_mut();
+            <span class="hljs-keyword">if</span> cache.is_some() {
+                <span class="hljs-keyword">return</span> cache.as_ref().unwrap().clone();
+            }
+
+            <span class="hljs-keyword">let</span> span_tree = <span class="hljs-keyword">self</span>.calc_span_tree();
+            *cache = <span class="hljs-literal">Some</span>(span_tree);
+        }
+
+        <span class="hljs-comment">// Recursive call to return the just-cached value.</span>
+        <span class="hljs-comment">// Note that if we had not let the previous borrow</span>
+        <span class="hljs-comment">// of the cache fall out of scope then the subsequent</span>
+        <span class="hljs-comment">// recursive borrow would cause a dynamic thread panic.</span>
+        <span class="hljs-comment">// This is the major hazard of using `RefCell`.</span>
+        <span class="hljs-keyword">self</span>.minimum_spanning_tree()
+    }
+}<code></pre>
+<ul><li><p>例如引用计数在clone(&self)时要增加count(&mut self)</p></li>
+</ul>
+<pre class="hlcode"><code><span class="hljs-meta">#![feature(core_intrinsics)]</span>
+<span class="hljs-keyword">use</span> std::cell::Cell;
+<span class="hljs-keyword">use</span> std::ptr::NonNull;
+<span class="hljs-keyword">use</span> std::intrinsics::abort;
+
+<span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">Rc</span></span>&lt;T: ?<span class="hljs-built_in">Sized</span>&gt; {
+    ptr: NonNull&lt;RcBox&lt;T&gt;&gt;
+}
+
+<span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">RcBox</span></span>&lt;T: ?<span class="hljs-built_in">Sized</span>&gt; {
+    strong: Cell&lt;<span class="hljs-built_in">usize</span>&gt;,
+    refcount: Cell&lt;<span class="hljs-built_in">usize</span>&gt;,
+    value: T,
+}
+
+<span class="hljs-keyword">impl</span>&lt;T: ?<span class="hljs-built_in">Sized</span>&gt; <span class="hljs-built_in">Clone</span> <span class="hljs-keyword">for</span> Rc&lt;T&gt; {
+    <span class="hljs-function"><span class="hljs-keyword">fn</span> <span class="hljs-title">clone</span></span>(&amp;<span class="hljs-keyword">self</span>) -&gt; Rc&lt;T&gt; {
+        <span class="hljs-keyword">self</span>.inc_strong();
+        Rc { ptr: <span class="hljs-keyword">self</span>.ptr }
+    }
+}
+
+<span class="hljs-class"><span class="hljs-keyword">trait</span> <span class="hljs-title">RcBoxPtr</span></span>&lt;T: ?<span class="hljs-built_in">Sized</span>&gt; {
+
+    <span class="hljs-function"><span class="hljs-keyword">fn</span> <span class="hljs-title">inner</span></span>(&amp;<span class="hljs-keyword">self</span>) -&gt; &amp;RcBox&lt;T&gt;;
+
+    <span class="hljs-function"><span class="hljs-keyword">fn</span> <span class="hljs-title">strong</span></span>(&amp;<span class="hljs-keyword">self</span>) -&gt; <span class="hljs-built_in">usize</span> {
+        <span class="hljs-keyword">self</span>.inner().strong.get()
+    }
+
+    <span class="hljs-function"><span class="hljs-keyword">fn</span> <span class="hljs-title">inc_strong</span></span>(&amp;<span class="hljs-keyword">self</span>) {
+        <span class="hljs-keyword">self</span>.inner()
+            .strong
+            .set(<span class="hljs-keyword">self</span>.strong()
+                     .checked_add(<span class="hljs-number">1</span>)
+                     .unwrap_or_else(|| <span class="hljs-keyword">unsafe</span> { abort() }));
+    }
+}
+
+<span class="hljs-keyword">impl</span>&lt;T: ?<span class="hljs-built_in">Sized</span>&gt; RcBoxPtr&lt;T&gt; <span class="hljs-keyword">for</span> Rc&lt;T&gt; {
+   <span class="hljs-function"><span class="hljs-keyword">fn</span> <span class="hljs-title">inner</span></span>(&amp;<span class="hljs-keyword">self</span>) -&gt; &amp;RcBox&lt;T&gt; {
+       <span class="hljs-keyword">unsafe</span> {
+           <span class="hljs-keyword">self</span>.ptr.as_ref()
+       }
+   }
+}<code></pre>
+<h3>当我们有某个共有的变量 同时有多个struct希望能够修改她</h3>
+<pre class="hlcode"><code><span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">A</span></span>&lt;<span class="hljs-symbol">'a</span>&gt;(&amp;<span class="hljs-symbol">'a</span> <span class="hljs-keyword">mut</span> <span class="hljs-built_in">i32</span>);
+
+<span class="hljs-keyword">impl</span>&lt;<span class="hljs-symbol">'a</span>&gt; A&lt;<span class="hljs-symbol">'a</span>&gt; {
+    <span class="hljs-function"><span class="hljs-keyword">fn</span> <span class="hljs-title">change_to</span></span>(&amp;<span class="hljs-keyword">mut</span> <span class="hljs-keyword">self</span>, v: <span class="hljs-built_in">i32</span>) {
+        *<span class="hljs-keyword">self</span>.<span class="hljs-number">0</span> = v;
+    }
+}
+
+<span class="hljs-function"><span class="hljs-keyword">fn</span> <span class="hljs-title">main</span></span>() {
+    <span class="hljs-keyword">let</span> <span class="hljs-keyword">mut</span> x = <span class="hljs-number">10</span>;
+    <span class="hljs-keyword">let</span> <span class="hljs-keyword">mut</span> a = A(&amp;<span class="hljs-keyword">mut</span> x);
+    <span class="hljs-keyword">let</span> <span class="hljs-keyword">mut</span> b = A(&amp;<span class="hljs-keyword">mut</span> x);
+    a.change_to(<span class="hljs-number">2</span>);
+    <span class="hljs-comment">// b.change_to(1);</span>
+    <span class="hljs-built_in">println!</span>(<span class="hljs-string">"{:?}"</span>,x);
+}
+
+<span class="hljs-comment">// use std::cell::Cell;</span>
+
+<span class="hljs-comment">// struct A&lt;'a&gt;(&amp;'a Cell::&lt;i32&gt;);</span>
+
+<span class="hljs-comment">// impl&lt;'a&gt; A&lt;'a&gt; {</span>
+<span class="hljs-comment">//     fn change_to(&amp;self,v:i32){</span>
+<span class="hljs-comment">//         self.0.set(v);</span>
+<span class="hljs-comment">//     }</span>
+<span class="hljs-comment">// }</span>
+
+<span class="hljs-comment">// fn main() {</span>
+<span class="hljs-comment">//     let x = Cell::new(10);</span>
+<span class="hljs-comment">//     let a = A(&amp;x);</span>
+<span class="hljs-comment">//     let b = A(&amp;x);</span>
+<span class="hljs-comment">//     b.change_to(1);</span>
+<span class="hljs-comment">//     a.change_to(2);</span>
+<span class="hljs-comment">//     println!("{:?}",x);</span>
+<span class="hljs-comment">// }</span><code></pre>
+<h1>RefCell</h1>
+            </article>
+            </div>
+            <body>
+            <script src="..\..\..\common/script/fix.js"></script>
+            </html>

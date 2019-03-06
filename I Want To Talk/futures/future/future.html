@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+            <html>
+            <head>
+            <meta charset="utf-8"/>
+            <link rel="stylesheet" href="..\..\..\common/default/style.css">
+            <link rel="stylesheet" href="..\..\..\common/highlight/styles/solarized-dark.css">
+            <link rel="stylesheet" type="text/css" href="..\..\..\common/math/katex/katex.min.css">
+            <link rel="stylesheet" type="text/css" href="..\..\..\common/label/label.min.css">
+            <script src="..\..\..\common/script/util.js"></script>
+            <title>future</title>
+            </head>
+            <body>
+            <div class="content">
+            <header id="meta">
+        <div id="tag" class="ui labels">
+        <a class="ui label" id="time_ago">Sun Jan 20 2019 21:03:18 GMT+0800 (GMT+08:00)</a>
+        <a class="ui label">I Want To Talk</a>
+<a class="ui label">futures</a>
+        
+        </div>
+    </header>
+            <article>
+            <h1>什么是future</h1>
+<p>就我目前的理解来看future是一种新型的书写方式 传统的代码按照线性顺序执行 但是在异步程序中为了表明异步逻辑 最简单的就是嵌套回调 future也是类似 只不过是通过and_then等方法将异步逻辑组合了起来 一个future就是一条调用链 调用链与调用链之间可以进行组合 组成的就是一个更大的future 但是future也仅仅是future而已其只是通过通过另一种方式描述了将要做的事情 就像一个蓝图 还要一个执行者 这个执行者就是tokio 所提供的东西</p>
+<h1>park 是个什么概念</h1>
+<h1>how a task init?</h1>
+<h1>task 与thread是什么关系</h1>
+<h2>根据操作系统概念的划分我们能够知道process与thread的区别 能够去调用current_process and current_thread but how can we call something like task::current</h2>
+<h2>how task works</h2>
+<h2>Task::current的实现</h2>
+<pre class="hlcode"><code><span class="hljs-keyword">pub</span> <span class="hljs-function"><span class="hljs-keyword">fn</span> <span class="hljs-title">current</span></span>() -&gt; Task {
+    with(|borrowed| {
+        <span class="hljs-keyword">let</span> unpark = borrowed.unpark.to_owned();
+        <span class="hljs-keyword">let</span> events = borrowed.events.to_owned();
+
+        Task {
+            id: borrowed.id,
+            unpark: unpark,
+            events: events,
+        }
+    })
+}<code></pre>
+<pre class="hlcode"><code><span class="hljs-function"><span class="hljs-keyword">fn</span> <span class="hljs-title">with</span></span>&lt;F: <span class="hljs-built_in">FnOnce</span>(&amp;BorrowedTask) -&gt; R, R&gt;(f: F) -&gt; R {
+    <span class="hljs-keyword">unsafe</span> {
+        <span class="hljs-keyword">let</span> task = get_ptr().expect(<span class="hljs-string">"no Task is currently running"</span>);
+        <span class="hljs-built_in">assert!</span>(!task.is_null(), <span class="hljs-string">"no Task is currently running"</span>);
+        f(&amp;*(task <span class="hljs-keyword">as</span> *<span class="hljs-keyword">const</span> BorrowedTask))
+    }
+}<code></pre>
+<pre class="hlcode"><code><span class="hljs-keyword">static</span> GET: AtomicUsize = ATOMIC_USIZE_INIT;
+<span class="hljs-keyword">static</span> SET: AtomicUsize = ATOMIC_USIZE_INIT;
+
+<span class="hljs-meta">#[inline]</span>
+<span class="hljs-keyword">pub</span> <span class="hljs-function"><span class="hljs-keyword">fn</span> <span class="hljs-title">get_ptr</span></span>() -&gt; <span class="hljs-built_in">Option</span>&lt;*<span class="hljs-keyword">mut</span> <span class="hljs-built_in">u8</span>&gt; {
+    <span class="hljs-keyword">match</span> GET.load(Relaxed) {
+        <span class="hljs-number">0</span> =&gt; <span class="hljs-literal">None</span>,
+        n =&gt; <span class="hljs-literal">Some</span>(<span class="hljs-keyword">unsafe</span> { mem::transmute::&lt;<span class="hljs-built_in">usize</span>, <span class="hljs-function"><span class="hljs-keyword">fn</span></span>() -&gt; *<span class="hljs-keyword">mut</span> <span class="hljs-built_in">u8</span>&gt;(n)() }),
+    }
+}<code></pre>
+<p>看起来GET 实质上是一个
+fn() -> *mut u8
+的函数指针 这个函数返回的是一个指向BorrowedTask的指针
+那么问题在于谁设置的这个指针呢 这个函数又是怎么实现的呢?(为什么要用指针啊 transmute真的安全吗? 2333)
+然后我就找到了注释</p>
+<pre class="hlcode"><code><span class="hljs-comment">/// Initialize the `futures` task system.</span>
+<span class="hljs-comment">///</span>
+<span class="hljs-comment">/// This function is an unsafe low-level implementation detail typically only</span>
+<span class="hljs-comment">/// used by crates using `futures` in `no_std` context. Users of this crate</span>
+<span class="hljs-comment">/// who also use the standard library never need to invoke this function.</span>
+<span class="hljs-comment">///</span>
+<span class="hljs-comment">/// The task system in the `futures` crate relies on some notion of "local</span>
+<span class="hljs-comment">/// storage" for the running thread and/or context. The `task::current` function</span>
+<span class="hljs-comment">/// can get invoked in any context, for example, and needs to be able to return</span>
+<span class="hljs-comment">/// a `Task`. Typically with the standard library this is supported with</span>
+<span class="hljs-comment">/// thread-local-storage, but this is not available in `no_std` contexts!</span>
+<span class="hljs-comment">///</span>
+<span class="hljs-comment">/// This function is provided to allow `no_std` contexts to continue to be able</span>
+<span class="hljs-comment">/// to use the standard task system in this crate. The functions provided here</span>
+<span class="hljs-comment">/// will be used as-if they were thread-local-storage getters/setters. The `get`</span>
+<span class="hljs-comment">/// function provided is used to retrieve the current thread-local value of the</span>
+<span class="hljs-comment">/// task system's pointer, returning null if not initialized. The `set` function</span>
+<span class="hljs-comment">/// updates the value of the pointer.</span>
+<span class="hljs-comment">///</span>
+<span class="hljs-comment">/// # Return value</span>
+<span class="hljs-comment">///</span>
+<span class="hljs-comment">/// This function will return whether initialization succeeded or not. This</span>
+<span class="hljs-comment">/// function can be called concurrently and only the first invocation will</span>
+<span class="hljs-comment">/// succeed. If `false` is returned then the `get` and `set` pointers provided</span>
+<span class="hljs-comment">/// were *not* registered for use with the task system, but if `true` was</span>
+<span class="hljs-comment">/// provided then they will be called when the task system is used.</span>
+<span class="hljs-comment">///</span>
+<span class="hljs-comment">/// Note that while safe to call concurrently it's recommended to still perform</span>
+<span class="hljs-comment">/// external synchronization when calling this function. This task system is</span>
+<span class="hljs-comment">/// not guaranteed to be ready to go until a call to this function returns</span>
+<span class="hljs-comment">/// `true`. In other words, if you call this function and see `false`, the</span>
+<span class="hljs-comment">/// task system may not be ready to go as another thread may still be calling</span>
+<span class="hljs-comment">/// `init`.</span>
+<span class="hljs-comment">///</span>
+<span class="hljs-comment">/// # Unsafety</span>
+<span class="hljs-comment">///</span>
+<span class="hljs-comment">/// This function is unsafe due to the requirements on the behavior of the</span>
+<span class="hljs-comment">/// `get` and `set` functions. The pointers returned from these functions must</span>
+<span class="hljs-comment">/// reflect the semantics specified above and must also be thread-local,</span>
+<span class="hljs-comment">/// depending on the definition of a "thread" in the calling context.</span><code></pre>
+<p>这个是std下的实现</p>
+<pre class="hlcode"><code>thread_local!(<span class="hljs-keyword">static</span> CURRENT_TASK: Cell&lt;*<span class="hljs-keyword">mut</span> <span class="hljs-built_in">u8</span>&gt; = Cell::new(ptr::null_mut()));
+
+<span class="hljs-keyword">static</span> INIT: Once = ONCE_INIT;
+
+<span class="hljs-keyword">pub</span> <span class="hljs-function"><span class="hljs-keyword">fn</span> <span class="hljs-title">get_ptr</span></span>() -&gt; <span class="hljs-built_in">Option</span>&lt;*<span class="hljs-keyword">mut</span> <span class="hljs-built_in">u8</span>&gt; {
+    <span class="hljs-comment">// Since this condition will always return true when TLS task storage is</span>
+    <span class="hljs-comment">// used (the default), the branch predictor will be able to optimize the</span>
+    <span class="hljs-comment">// branching and a dynamic dispatch will be avoided, which makes the</span>
+    <span class="hljs-comment">// compiler happier.</span>
+    <span class="hljs-keyword">if</span> core::is_get_ptr(<span class="hljs-number">0x1</span>) {
+        <span class="hljs-literal">Some</span>(CURRENT_TASK.with(|c| c.get()))
+    } <span class="hljs-keyword">else</span> {
+        core::get_ptr()
+    }
+}<code></pre>
+<h2>这个CURRENT_TASK是怎么样设置进去的</h2>
+<p>看起来是下面这个函数设置的</p>
+<pre class="hlcode"><code><span class="hljs-keyword">pub</span> <span class="hljs-function"><span class="hljs-keyword">fn</span> <span class="hljs-title">set</span></span>&lt;<span class="hljs-symbol">'a</span>, F, R&gt;(task: &amp;BorrowedTask&lt;<span class="hljs-symbol">'a</span>&gt;, f: F) -&gt; R
+    <span class="hljs-keyword">where</span> F: <span class="hljs-built_in">FnOnce</span>() -&gt; R
+{
+    <span class="hljs-comment">// Lazily initialize the get / set ptrs</span>
+    <span class="hljs-comment">//</span>
+    <span class="hljs-comment">// Note that we won't actually use these functions ever, we'll instead be</span>
+    <span class="hljs-comment">// testing the pointer's value elsewhere and calling our own functions.</span>
+    INIT.call_once(|| <span class="hljs-keyword">unsafe</span> {
+        <span class="hljs-keyword">let</span> get = mem::transmute::&lt;<span class="hljs-built_in">usize</span>, _&gt;(<span class="hljs-number">0x1</span>);
+        <span class="hljs-keyword">let</span> set = mem::transmute::&lt;<span class="hljs-built_in">usize</span>, _&gt;(<span class="hljs-number">0x2</span>);
+        init(get, set);
+    });
+
+    <span class="hljs-comment">// Same as above.</span>
+    <span class="hljs-keyword">if</span> core::is_get_ptr(<span class="hljs-number">0x1</span>) {
+        <span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">Reset</span></span>(*<span class="hljs-keyword">const</span> Cell&lt;*<span class="hljs-keyword">mut</span> <span class="hljs-built_in">u8</span>&gt;, *<span class="hljs-keyword">mut</span> <span class="hljs-built_in">u8</span>);
+
+        <span class="hljs-keyword">impl</span> <span class="hljs-built_in">Drop</span> <span class="hljs-keyword">for</span> Reset {
+            <span class="hljs-meta">#[inline]</span>
+            <span class="hljs-function"><span class="hljs-keyword">fn</span> <span class="hljs-title">drop</span></span>(&amp;<span class="hljs-keyword">mut</span> <span class="hljs-keyword">self</span>) {
+                <span class="hljs-keyword">unsafe</span> {
+                    (*<span class="hljs-keyword">self</span>.<span class="hljs-number">0</span>).set(<span class="hljs-keyword">self</span>.<span class="hljs-number">1</span>);
+                }
+            }
+        }
+
+        <span class="hljs-keyword">unsafe</span> {
+            <span class="hljs-keyword">let</span> slot = tls_slot();
+            <span class="hljs-keyword">let</span> _reset = Reset(slot, (*slot).get());
+            (*slot).set(task <span class="hljs-keyword">as</span> *<span class="hljs-keyword">const</span> _ <span class="hljs-keyword">as</span> *<span class="hljs-keyword">mut</span> <span class="hljs-built_in">u8</span>);
+            f()
+        }
+    } <span class="hljs-keyword">else</span> {
+        core::set(task, f)
+    }
+}<code></pre>
+<h2>谁 init/update/set CURRENT_TASK</h2>
+<h1>我们如何控制poll的频率 能不做到更精细的控制</h1>
+<h1>相关阅读</h1>
+<p><a href="https://users.rust-lang.org/t/how-futures-tasks-work-with-executors/11585/8">how-futures-tasks-work-with-executors</a>
+<br>
+<a href="https://www.reddit.com/r/rust/comments/73l6na/looking_into_the_future_a_post_explaining_how/">looking_into_the_future_a_post_explaining_how</a>
+
+
+<a href="https://www.coredump.ch/2017/07/05/understanding-the-tokio-reactor-core/">understanding-the-tokio-reactor-core</a></p>
+            </article>
+            </div>
+            <body>
+            <script src="..\..\..\common/script/fix.js"></script>
+            </html>

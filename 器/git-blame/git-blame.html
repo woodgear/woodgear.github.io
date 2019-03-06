@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+            <html>
+            <head>
+            <meta charset="utf-8"/>
+            <link rel="stylesheet" href="..\..\common/default/style.css">
+            <link rel="stylesheet" href="..\..\common/highlight/styles/solarized-dark.css">
+            <link rel="stylesheet" type="text/css" href="..\..\common/math/katex/katex.min.css">
+            <link rel="stylesheet" type="text/css" href="..\..\common/label/label.min.css">
+            <script src="..\..\common/script/util.js"></script>
+            <title>git-blame</title>
+            </head>
+            <body>
+            <div class="content">
+            <header id="meta">
+        <div id="tag" class="ui labels">
+        <a class="ui label" id="time_ago">Tue Jan 29 2019 22:50:40 GMT+0800 (GMT+08:00)</a>
+        <a class="ui label">器</a>
+        
+        </div>
+    </header>
+            <article>
+            <h2>使用git分析文件创建/修改时间</h2>
+<p>输入:被git管理的文件路径</p>
+<p>输出:形如</p>
+<pre class="hlcode"><code>{
+    create:"2017:10:10/10:10",
+    lastmodify:"2017:10:10/10:10"
+}<code></pre>
+<h2>原理</h2>
+<pre class="hlcode"><code>git <span class="hljs-built_in">log</span>  --follow --date-order --pretty={\<span class="hljs-string">"date\":\"%cI\"\,\"author\":\"%an\"\,\"msg\":\"%s\"\,\"hash\":\"%h\"} -- test1.md</span><code></pre>
+            </article>
+            </div>
+            <body>
+            <script src="..\..\common/script/fix.js"></script>
+            </html>
