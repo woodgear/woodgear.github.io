@@ -1,0 +1,1 @@
+{"data":{"markdownRemark":{"html":"<h1>how to set panel title</h1>\n<ol>\n<li>use tmux after 2.3 </li>\n<li>set -g pane-border-status bottom</li>\n</ol>","frontmatter":{"title":""}}},"pageContext":{"isCreatedByStatefulCreatePages":false,"slug":"/器/tmux/"}}
