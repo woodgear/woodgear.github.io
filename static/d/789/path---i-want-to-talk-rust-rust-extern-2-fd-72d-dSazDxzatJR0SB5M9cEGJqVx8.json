@@ -1,1 +1,0 @@
-{"data":{"markdownRemark":{"html":"<p>当在rust中使用extern 语法时我们就能够使用rust来调用外部的dll 或者是在运行时需要一个dll文件 或者是把某个lib静态链接到我们的rust项目中 但是这其中到底是什么意思? 在操作系统的层面又发生了什么?\n两者的区别是什么? 特别是在绑定windows api中凭什么我们写了一堆定义 就能够调用到windows的api?</p>"}},"pageContext":{"isCreatedByStatefulCreatePages":false,"slug":"/I Want To Talk/rust/rust-extern/","fileNode":"fileNode"}}
