@@ -1,0 +1,1 @@
+{"data":{"markdownRemark":{"html":"<h1>install</h1>\n<p>sudo apt install qemu qemu-kvm libvirt-bin  bridge-utils  virt-manager\nsudo service libvirtd start\nsudo update-rc.d libvirtd enable</p>\n<h1>network-default-is-not-active</h1>\n<p>sudo virsh net-start default</p>"}},"pageContext":{"isCreatedByStatefulCreatePages":false,"slug":"/其中的一个齿轮/kvm/"}}
