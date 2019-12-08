@@ -1,0 +1,1 @@
+{"data":{"markdownRemark":{"html":"<h1>swap</h1>\n<h2>开启/配置 swap</h2>\n<p><a href=\"https://linuxize.com/post/how-to-add-swap-space-on-ubuntu-18-04/\">how-to-add-swap-space</a></p>\n<h2>查看swap使用状态</h2>\n<p>sudo free -h</p>"}},"pageContext":{"isCreatedByStatefulCreatePages":false,"slug":"/齿轮/linux/"}}

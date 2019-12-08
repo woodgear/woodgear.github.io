@@ -1,1 +1,0 @@
-{"data":{"markdownRemark":{"html":"<h1>note of exploring-async-basics</h1>\n<p><a href=\"https://cfsamson.github.io/book-exploring-async-basics/introduction.html\">book-exploring-async-basics</a></p>\n<h1>timeout</h1>\n<p>使用epoll(minimio)挂起线程等到timeout时处理那些即将过期的事件</p>"}},"pageContext":{"isCreatedByStatefulCreatePages":false,"slug":"/how-it-work (1)/async-basic/"}}

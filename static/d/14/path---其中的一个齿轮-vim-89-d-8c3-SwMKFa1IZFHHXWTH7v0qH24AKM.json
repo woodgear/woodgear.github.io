@@ -1,1 +1,0 @@
-{"data":{"markdownRemark":{"html":"<h1>mutli line edit</h1>\n<ol>\n<li>\n<p>visual block Practical vim p42 用面向列的可视模式编辑表格数据\nctrl+v 进入面向列的可视模式\nc 编辑列 esc 应用编辑\n实际上当用ctrl+v进入到可视模式时实际上还是普通模式可以用x . 等命令</p>\n<h1>多文件编辑</h1>\n<p>vsp 与sp</p>\n</li>\n</ol>"}},"pageContext":{"isCreatedByStatefulCreatePages":false,"slug":"/其中的一个齿轮/vim/"}}
