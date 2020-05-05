@@ -1,0 +1,1 @@
+{"data":{"markdownRemark":{"html":"<h1>describe</h1>\n<p>在两个处理器上并行运行时,程序可获得的加速比为S2,使用Amdahl定律推导出在n个处理器上运行u程序时的加速比Sn,要求用n和S2来表示.</p>"}},"pageContext":{"isCreatedByStatefulCreatePages":false,"slug":"/examer-resource/taomp/chapter-1/7.question/"}}

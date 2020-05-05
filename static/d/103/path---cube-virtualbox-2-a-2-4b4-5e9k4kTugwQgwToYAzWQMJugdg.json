@@ -1,0 +1,1 @@
+{"data":{"markdownRemark":{"html":"<h1>windows host ubuntu18.04 guest 无法全屏</h1>\n<p>Settings (of the VM) > Display > Graphics Controller > and select \"VBoxVGA\"</p>\n<h1></h1>"}},"pageContext":{"isCreatedByStatefulCreatePages":false,"slug":"/cube/virtualbox/"}}
