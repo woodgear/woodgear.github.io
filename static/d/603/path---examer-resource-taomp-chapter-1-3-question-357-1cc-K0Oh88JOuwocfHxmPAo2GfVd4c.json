@@ -1,1 +1,0 @@
-{"data":{"markdownRemark":{"html":"<h1>describe</h1>\n<p>在生产者消费者模型中,假设Bob能够看见Alice窗台上的啤酒瓶是竖直的还是翻倒的.请基于啤酒瓶-绳子协议来设计一种生产者消费者协议,使得即使Bob无法看见Alice窗台上的啤酒瓶的状态,也能正常工作(即实际中,中断位是如何工作的)</p>"}},"pageContext":{"isCreatedByStatefulCreatePages":false,"slug":"/examer-resource/taomp/chapter-1/3.question/"}}

@@ -1,0 +1,1 @@
+{"componentChunkName":"component---src-templates-blog-post-js","path":"/share/service要素/","result":{"data":{"markdownRemark":{"html":"<p>作为一个service我们需要什么</p>\n<h1>文档</h1>\n<p>必须能够程序化的给出这个服务的定义http请发起?url是什么参数是什么\n必需容易测试 最好能够被直接调用 例如直接导入到postman中</p>"}},"pageContext":{"slug":"/share/service要素/"}}}

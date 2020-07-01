@@ -1,1 +1,0 @@
-{"data":{"markdownRemark":{"html":"<h1>如何快速的打开 Start Up 目录</h1>\n<p>win+r shell:startup</p>\n<h1>kill process which listening port</h1>\n<p>netstat -ano | findstr :yourPortNumber\ntaskkill /PID typeyourPIDhere /F</p>\n<h1>取消登录密码</h1>\n<p>netplwiz run as admin cancle user must enter passed etc ...</p>"}},"pageContext":{"isCreatedByStatefulCreatePages":false,"slug":"/齿轮/windows/"}}

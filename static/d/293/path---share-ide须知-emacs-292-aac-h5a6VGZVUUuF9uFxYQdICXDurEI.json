@@ -1,1 +1,0 @@
-{"data":{"markdownRemark":{"html":"<h1>l-list-installed-package</h1>\n<p><code class=\"language-text\">M-x list-packages</code>进入到package的列表中,使用<code class=\"language-text\">M-x end-of-buffer</code>跳到最后面,然后使用上方向键 install的package会有红色的标识</p>"}},"pageContext":{"isCreatedByStatefulCreatePages":false,"slug":"/share/ide须知/emacs/"}}

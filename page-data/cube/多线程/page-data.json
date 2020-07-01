@@ -1,0 +1,1 @@
+{"componentChunkName":"component---src-templates-blog-post-js","path":"/cube/多线程/","result":{"data":{"markdownRemark":{"html":"<h1>CAS</h1>\n<p>比较并\n原子指令 为多线程操作提供更细致的机制 以此来解决操作顺序问题 </p>"}},"pageContext":{"slug":"/cube/多线程/"}}}
