@@ -1,1 +1,0 @@
-{"componentChunkName":"component---src-templates-blog-post-js","path":"/cube/cp/","result":{"data":{"markdownRemark":{"html":"<h1>cp with progress</h1>\n<p>rsync -ah --progress source destination</p>"}},"pageContext":{"slug":"/cube/cp/"}}}
