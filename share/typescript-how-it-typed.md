@@ -1,0 +1,29 @@
+---
+id: 'k5tpltg'
+time: '2019-06-03T23:01:59+08:00'
+tag: typescript 搬砖指南
+---
+
+## 在纯TS项目中最简单的直接使用一个没有TS支持的第三方NodeJs库(例如js-md4) 而不编译报错的方法是?
+随便写个*.d.ts(例如js-md4.d.ts 不要和已有的*.ts文件重名),在其中加入declare module 'js-md4'.
+实际上*.d.ts的文件名并不重要,重要的是.d.ts的后缀.TS会根据它来找类型定义.在d.ts中可以写多个declare module
+注意d.ts文件要在tsconfig.json的include属性标识的范围内
+我们已知的是typescript通过最终编译成JS来执行,通过某种机制能够直接使用原生的JS库.那么这种机制到底是什么? 即我们如何给一个第三方没有type的库增加type,typescript又是如何做到这一点的?
+
+d.ts 文件
+类似于C++的header通过一个单独的文件来定义类型 但在实际定义类型的文件中 并不关心真正的实现在哪里 仅仅是定义一个了一个同名的module此module代表的就是额外增加的类型信息
+
+本质上讲你可以之间引用任意的NodeJs库而不会报错 只要设置"noImplicitAny": false,
+
+declare module 'moment' 即使在"noImplicitAny": true,时也能够直接使用而不用具体定义但declare module 'moment'  {}就真正的开始检查了
+
+# show case
+[ts-type-show-case](https://github.com/woodgear/ts-type-show-case)
+注意的要点是tsconfig中定义的paths指明了自定义的类型说明文件 [tsconfig](https://github.com/woodgear/ts-type-show-case/blob/d684cced53474bc571c27f7213e95b4c3ff39681/ts-demo/tsconfig.json#L16)
+
+## ts如何查找类型
+[@types, typeRoots and types](https://www.typescriptlang.org/docs/handbook/tsconfig-json.html)
+默认会找./node_modules/@types/, ../node_modules/@types/, ../../node_modules/@types/ 可以通过tsconfig.json的typeRoots属性控制
+## 当npm install -d @types/xx 时发生了什么
+会下载类型定义到./node_modules/@types中 实际上就是使用
+[npm-scope](https://docs.npmjs.com/misc/scope)

@@ -1,0 +1,13 @@
+---
+time: '1996-09-08T23:37:07+08:00'
+id: '3plqzrx'
+---
+
+# example
+```bash
+xargs -I {} mv dir1/{} dir2/{}
+```
+# multiple commands
+```bash
+
+```

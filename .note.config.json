@@ -1,0 +1,11 @@
+{
+    "deploy": {
+        "gitrepo": "git@github.com:woodgear/woodgear.github.io.git"
+    },
+    "blog": {
+        "title": "Exist&Change"
+    },
+    "disqus": {
+        "shortname": "woodgear-blog"
+    }
+}
