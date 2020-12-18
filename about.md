@@ -8,9 +8,24 @@ type: about
 
 ## 博客管理
 得意之作3号[Note](https://github.com/woodgear/Note) 绝赞填坑中
+## 分类
+### baseball
+读书笔记
+### cube
+工具性知识
+### tech-share
+技术分享
+### touchme
+诗歌/散文分享
+### 评论者
+对其他文章的一些评论和看法
+### 要素
+对比性质的文章
 ## contact
 [github: woodgear](https://github.com/woodgear)  
 [blog: woodgear.github.io](https://woodgear.github.io/)   
 [zhihu: zhihu.com/people/wu-cong-94](https://www.zhihu.com/people/wu-cong-94)  
 [豆瓣: 周天子](https://www.douban.com/people/81149435/)  
 [推特: smsmpulupulu](https://twitter.com/smsmpulupulu)
+[inoreader](https://www.inoreader.com/stream/user/1006155301/tag/%E4%BF%A1%E6%81%AF)
+[hypothes](https://hypothes.is/users/oaa)

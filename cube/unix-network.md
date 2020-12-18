@@ -1,6 +1,8 @@
 ---
-time: '1996-09-08T23:37:07+08:00'
-id: 'f06z8xi'
+id: 1da18f
+time: '2020-12-08T23:40:44+08:00'
 ---
 
-# what enp0s31f6 mean in ifconfig
+## list listening port 
+```bash
+```

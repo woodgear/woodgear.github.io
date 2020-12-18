@@ -9,3 +9,8 @@ id: '55aukhz'
 3. 特殊节点
 4. 正则
 # 时间
+
+## follow tail
+```bash
+journalctl -f
+```

@@ -16,3 +16,7 @@ jq '.subitem|keys'
 ```bash
 jq -n --arg greeting world '{"hello":"\($greeting)"}'
 ```
+# access object which contain  '-'
+```bash
+echo '{"a-1":1}' |jq '.["a-1"]'
+```

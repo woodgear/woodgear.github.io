@@ -7,5 +7,12 @@
     },
     "disqus": {
         "shortname": "woodgear-blog"
+    },
+    "extra": {
+        "homePage": {
+            "filterCategory": [
+                "cube"
+            ]
+        }
     }
 }

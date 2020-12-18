@@ -6,4 +6,5 @@ id: '7220ffd'
 # print format
 ```
 { printf "%10s %6d\n", $1, $3 }
+awk '{print $1,$4}' log.txt
 ```

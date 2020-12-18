@@ -48,3 +48,7 @@ bind-key -T copy-mode MouseDragEnd1Pane send -X copy-pipe-and-cancel "reattach-t
  tmux send-keys -t 1 -l "sed  \" -n '5864,\$p' ./log.log | less" ; tmux send-keys -t 1 enter
 
 ```
+# 在tmux中选择不同session
+```bash
+ctrl+b+s
+```

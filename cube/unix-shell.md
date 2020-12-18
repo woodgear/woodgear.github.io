@@ -114,7 +114,10 @@ llm
 exit 0
 ```
 # measure time
+```bash
+# 要注意的是time在有些shell中同时也是保留关键字,所以有可能要用/usr/bin/time
 time xxx
+```
 # check kernel version
 ```
 uname -rv
@@ -134,4 +137,23 @@ random() {
 id=$(random 10)
 echo $id
 # output: mnRnNxGKtc 
+```
+## detect macos or other
+[how-to-detect-the-os-from-a-bash-script](https://stackoverflow.com/questions/394230/how-to-detect-the-os-from-a-bash-script)
+```bash
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        # ...
+elif [[ "$OSTYPE" == "darwin"* ]]; then
+        # Mac OSX
+elif [[ "$OSTYPE" == "cygwin" ]]; then
+        # POSIX compatibility layer and Linux environment emulation for Windows
+elif [[ "$OSTYPE" == "msys" ]]; then
+        # Lightweight shell and GNU utilities compiled for Windows (part of MinGW)
+elif [[ "$OSTYPE" == "win32" ]]; then
+        # I'm not sure this can happen.
+elif [[ "$OSTYPE" == "freebsd"* ]]; then
+        # ...
+else
+        # Unknown.
+fi
 ```

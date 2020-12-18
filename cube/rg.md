@@ -40,3 +40,7 @@ rg -i
 (aaaa|bbbbb)
 ```
 [online-demo](https://regex101.com/r/NF4LZX/1)
+# search in all folder
+```bash
+rg --no-ignore --hidden 'xx'
+```

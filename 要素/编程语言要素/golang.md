@@ -254,6 +254,9 @@ for k, v := range m {
 # common-container
 ## list
 ## array
+```go
+
+```
 ## quque
 ## map
 ```golang
@@ -273,6 +276,23 @@ func main() {
 	a.m = make(map[uint64]uint64)
 	a.m[1] = 2
 	fmt.Printf("%v", a)
+}
+```
+```go
+package main
+
+import (
+	"fmt"
+)
+
+func main() {
+	m := make(map[uint64]string)
+	m[1] = "1111"
+	m[3] = "1111"
+
+	fmt.Printf("%v\n", m)
+	fmt.Printf("%v\n", m[1])
+	fmt.Printf("%v\n", m[3])
 }
 ```
 

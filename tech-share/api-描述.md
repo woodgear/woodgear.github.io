@@ -1,6 +1,7 @@
 ---
 id: '084cc3'
 time: '2020-11-10T09:52:11+08:00'
+status: draft
 ---
 本文尝试总结api(restful api)描述文件的一些要素.以此来指出从这种api描述文件中直接生成代码所依赖的要素有那些.同时还会介绍[openApi 3.0](https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.2.md)中对这些要素的具体说明,以及如何用ts实现一个简单但足够实用的openapi code generator.
 
